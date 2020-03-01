@@ -160,15 +160,11 @@ def andi():
 
 @showUpdate
 def lw():
-    if dataMemory[registers[reg(rs)]+imm] % 4 != 0:
-        raise Exception("Loading from a memory address that is not a multiple of 4")
     assembly_language = f"{instruction} {rt}, 0$({rs})" if imm == "0x0" else f"{instruction} {rt}, {imm}(${rs})"
     registers[reg(rt)] = dataMemory[registers[reg(rs)]+imm]
 
 @showUpdate
 def sw():
-    if dataMemory[registers[reg(rs)]+imm] % 4 != 0:
-        raise Exception("Storing into a memory address that is not a multiple of 4")
     assembly_language = f"{instruction} {rt}, 0$({rs})" if imm == "0x0" else f"{instruction} {rt}, {imm}(${rs})"
     dataMemory[registers[reg(rs)]+imm] = registers[reg(rt)]
 
