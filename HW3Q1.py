@@ -37,8 +37,8 @@ class showUpdate(object):
         self.f = f
 
     def __call__(self, *args, **kwargs):
-        oldRegisters = registers
-        oldPc = pc
+        oldRegisters = dict(registers)
+        oldPc = int(pc)
         self.f()
         for key in registers.keys():
             if registers[key] != oldRegisters[key]:
