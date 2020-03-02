@@ -1,7 +1,7 @@
 givenTestCase = [0x20072000, 0x20e6fffd, 0x00072022, 0x00864020, 0x3105000f, 0x0085402a,
                  0xac082008, 0x20e70008, 0xace8fffc, 0x8c082004, 0x8ce50000]
 
-myTestCase = [0x2084115c, 0x2001115c, 0x00812022, 0x200501a4, 0x30a60539, 0xac062000, 0x8c072000, 0xac070000]
+myTestCase = [0x24084115c, 0x2001115c, 0x00812022, 0x200501a4, 0x30a60539, 0xac062000, 0x8c072000, 0xac070000]
 
 instructions = {"0b000000": {"0b100000": "add", "0b100010": "sub", "0b101010": "slt",
                              "0b011010": "div", "0b010000": "mfhi", "0b000100": "sllv",
@@ -14,22 +14,35 @@ instructions = {"0b000000": {"0b100000": "add", "0b100010": "sub", "0b101010": "
 registers = {}  # created empty dictionary for registers
 for x in range(32):
     registers.update({f'${x}' : 0})
-registers.update({'lo':0, 'hi':0})
+registers.update({'lo': 0, 'hi': 0})
 
-dataMemory = {}  # created empty dictionary for dataMemory
+dataMemory = {}
 for x in range(0x2000, 0x3000, 4):
     dataMemory.update({x: 0})
 
 pc = 0
-def setPc(n=0):
-    global pc
-    pc = n*4
+
+
 def incrementPc(n=1):
     global pc
-    pc += n*4
+    pc += 4*n
 
-def reg(num):
-    return "$" + str(num)
+
+def setPc(n=0):
+    global pc
+    pc = 4*n
+
+
+i = ""
+rd = ""
+rt = ""
+rs = ""
+op = ""
+shamt = ""
+jumpi = ""
+assembly_language = ""
+imm = 0
+instruction = ""
 
 class showUpdate(object):
 
@@ -45,188 +58,6 @@ class showUpdate(object):
                 print(f"{key}: {oldRegisters[key]} -> {registers[key]}")
             if oldPc != pc:
                 print(f"pc: {oldPc} -> {pc}")
-
-@showUpdate
-def sra():
-    global assembly_language, registers
-    assembly_language = f"{instruction} ${rd}, ${rs}, ${rt}"
-    registers[reg(rd)] = registers[reg(rt)] >> imm
-
-@showUpdate
-def xori():
-    global assembly_language, registers
-    assembly_language = f"{instruction}, ${rt}, ${rs}, {imm}"
-    registers[reg(rt)] = registers[reg(rs)] ^ imm
-
-@showUpdate
-def slti():
-    global assembly_language, registers
-    assembly_language = f"{instruction}, ${rt}, ${rs}, {imm}"
-    registers[reg(rt)] = 1 if registers[reg(rs)] < imm else 0
-
-@showUpdate
-def xor():
-    global assembly_language, registers
-    assembly_language = f"{instruction} ${rd}, ${rs}, ${rt}"
-    registers[reg(rd)] = registers[reg(rs)] ^ registers[reg(rt)]
-
-@showUpdate
-def sllv():
-    global assembly_language, registers
-    assembly_language = f"{instruction} ${rd}, ${rs}, ${rt}"
-    registers[reg(rd)] = registers[reg(rt)] << rs
-
-@showUpdate
-def sll():
-    global assembly_language, registers
-    assembly_language = f"{instruction} ${rd}, ${rs}, ${rt}"
-    registers[reg(rd)] = registers[reg(rt)] << shamt
-
-@showUpdate
-def add():
-    global assembly_language, registers
-    assembly_language = f"{instruction} ${rd}, ${rs}, ${rt}"
-    registers[reg(rd)] = registers[reg(rs)] + registers[reg(rt)]
-
-@showUpdate
-def sub():
-    global assembly_language, registers
-    assembly_language = f"{instruction} ${rd}, ${rs}, ${rt}"
-    registers[reg(rd)] = registers[reg(rs)] - registers[reg(rt)]
-
-@showUpdate
-def slt():
-    global assembly_language, registers
-    assembly_language = f"{instruction} ${rd}, ${rs}, ${rt}"
-    registers[reg(rd)] = 1 if registers[reg(rs)] < registers[reg(rt)] else 0
-
-@showUpdate
-def addi():
-    global assembly_language, registers
-    assembly_language = f"{instruction}, ${rt}, ${rs}, {imm}" if abs(imm) < 8192 else f"{instruction}, ${rt}, ${rs}, {hex(imm)}"
-    registers[reg(rt)] = registers[reg(rs)] + imm
-    pass
-
-@showUpdate
-def andi():
-    global assembly_language, registers
-    assembly_language = f"{instruction}, ${rt}, ${rs}, {imm}" if abs(imm) < 8192 else f"{instruction}, ${rt}, ${rs}, {hex(imm)}"
-    registers[reg(rt)] = registers[reg(rs)] & imm
-
-@showUpdate
-def lw():
-    global assembly_language, registers
-    # assembly_language = f"{instruction} ${rt}, 0$({rs})" if imm == 0 else f"{instruction} ${rt}, {hex(imm)}(${rs})"
-    assembly_language = f"{instruction} ${rt}, {imm}(${rs})" if abs(imm) < 8192 else f"{instruction} ${rt}, {hex(imm)}(${rs})"
-    a = dataMemory[(registers[reg(rs)]+imm)]
-    registers[reg(rt)] = dataMemory[(registers[reg(rs)]+imm)]
-
-
-@showUpdate
-def sw():
-    global assembly_language, registers
-    assembly_language = f"{instruction} ${rt}, {imm}(${rs})" if abs(imm) < 8192 else f"{instruction} ${rt}, {hex(imm)}(${rs})"
-    dataMemory[registers[reg(rs)]+imm] = registers[reg(rt)]
-
-@showUpdate
-def div():
-    global assembly_language, registers
-    assembly_language = f"{instruction}, ${rs}, %{rt}"
-    registers["lo"] = registers[reg(rs)] / registers[reg(rt)]
-    registers["hi"] = registers[reg(rs)] % registers[reg(rt)]
-
-@showUpdate
-def mfhi():
-    global assembly_language, registers
-    assembly_language = f"{instruction} ${rd}"
-    registers[reg(rd)] = registers["hi"]
-
-@showUpdate
-def beq():
-    global assembly_language, registers
-    assembly_language = f"{instruction}, ${rs}, ${rt}, {imm}" if abs(imm) < 8192 else f"{instruction}, ${rs}, ${rt}, {hex(imm)}"
-    if registers[reg(rs)] == registers[reg(rt)]:
-        incrementPc()
-        incrementPc(imm)
-    else:
-        pass
-
-@showUpdate
-def bne():
-    global assembly_language, registers
-    assembly_language = f"{instruction}, ${rs}, ${rt}, {imm}" if abs(imm) < 8192 else f"{instruction}, ${rs}, ${rt}, {hex(imm)}"
-    if registers[reg(rs)] == registers[reg(rt)]:
-        pass
-    else:
-        incrementPc()
-        incrementPc(imm)
-
-@showUpdate
-def j():
-    global assembly_language, registers
-    setPc(imm)
-
-@showUpdate
-def jr():
-    global assembly_language, registers
-    assembly_language = f"{instruction}, ${rs}"
-    setPc(registers[reg(rs)])
-
-@showUpdate
-def jal():
-    global assembly_language, registers
-    registers[reg(31)] = int(pc / 4)
-    setPc(registers[reg(rs)])
-
-@showUpdate
-def sra():
-    global assembly_language, registers
-    assembly_language = f"{instruction}, ${rd}, ${rt}, {shamt}"
-    registers[reg(rd)] = registers[reg(rt)] >> imm
-
-@showUpdate
-def xori():
-    global assembly_language, registers
-    assembly_language = f"{instruction} ${rt}, {imm}(${rs})" if abs(imm) < 8192 else f"{instruction} ${rt}, {hex(imm)}(${rs})"
-    registers[reg(rt)] = registers[reg(rs)] ^ imm
-
-@showUpdate
-def slti():
-    global assembly_language, registers
-    assembly_language = f"{instruction} ${rt}, {imm}(${rs})" if abs(imm) < 8192 else f"{instruction} ${rt}, {hex(imm)}(${rs})"
-    registers[reg(rt)] = 1 if registers[reg(rs)] < imm else 0
-
-@showUpdate
-def xor():
-    global assembly_language, registers
-    assembly_language = f"{instruction} ${rd}, ${rs}, ${rt}"
-    registers[reg(rd)] = registers[reg(rs)] ^ registers[reg(rt)]
-
-@showUpdate
-def sllv():
-    global assembly_language, registers
-    assembly_language = f"{instruction} ${rd}, ${rs}, ${rt}"
-    registers[reg(rd)] = registers[reg(rt)] << rs
-
-@showUpdate
-def sll():
-    global assembly_language, registers
-    assembly_language = f"{instruction} ${rd}, ${rs}, ${shamt}"
-    registers[reg(rd)] = registers[reg(rt)] << shamt
-
-
-i = ""
-rd = ""
-rt = ""
-rs = ""
-op = ""
-shamt = ""
-jumpi = ""
-assembly_language = ""
-imm = 0
-instruction = ""
-
-
 
 
 # This was stolen from StackOverflow
@@ -248,7 +79,6 @@ def machine_to_assembly(machine_codes):
     global imm
     global instruction
 
-
     assembly_languages = []
 
     for machine_code in machine_codes:
@@ -267,10 +97,9 @@ def machine_to_assembly(machine_codes):
 
         if r_type:
             funct = "0b" + i[-6:]
-        # else:
-        #     imm = twos_comp(int((rd + i), 2), 16) if r_type else twos_comp(int)
-        #     #imm = hex(imm) if imm >= 8192 else str(imm)
-        imm = twos_comp(int(i,2), 16) if r_type else twos_comp(int((rd + i), 2), 16)
+        else:
+            imm = twos_comp(int((rd + i), 2), 16)
+            imm = hex(imm) if imm >= 8192 else str(imm)
 
         rd = int(rd, 2)
         rt = int(rt, 2)
@@ -279,17 +108,16 @@ def machine_to_assembly(machine_codes):
         jumpi = int(jumpi, 2)
 
         instruction = instructions[op][funct] if r_type else instructions[op]
-        pythonInstruction = globals()[instruction]
+        pythonInstruction = locals()[instruction]()
         pythonInstruction()
 
         assembly_languages.append(assembly_language)
-    pass
+
     return assembly_languages
 
 
 print("Given Test Case:")
 for test in machine_to_assembly(givenTestCase):
-    pass
     print("\t" + test)
 
 print("My Test Case:")
@@ -297,6 +125,198 @@ for test in machine_to_assembly(myTestCase):
     print("\t" + test)
 
 
+def reg(num):
+    return "$" + str(num)
+
+
+@showUpdate
+def sra():
+    global assembly_language, registers
+    assembly_language = f"{instruction} ${rd}, ${rs}, ${rt}"
+    registers[reg(rd)] = registers[reg(rt)] >> imm
+
+
+@showUpdate
+def xori():
+    global assembly_language, registers
+    assembly_language = f"{instruction}, ${rt}, ${rs}, {imm}"
+    registers[reg(rt)] = registers[reg(rs)] ^ imm
+
+
+@showUpdate
+def slti():
+    global assembly_language, registers
+    assembly_language = f"{instruction}, ${rt}, ${rs}, {imm}"
+    registers[reg(rt)] = 1 if registers[reg(rs)] < imm else 0
+
+
+@showUpdate
+def xor():
+    global assembly_language, registers
+    assembly_language = f"{instruction} ${rd}, ${rs}, ${rt}"
+    registers[reg(rd)] = registers[reg(rs)] ^ registers[reg(rt)]
+
+
+@showUpdate
+def sllv():
+    global assembly_language, registers
+    assembly_language = f"{instruction} ${rd}, ${rs}, ${rt}"
+    registers[reg(rd)] = registers[reg(rt)] << rs
+
+
+@showUpdate
+def sll():
+    global assembly_language, registers
+    assembly_language = f"{instruction} ${rd}, ${rs}, ${rt}"
+    registers[reg(rd)] = registers[reg(rt)] << shamt
+
+
+@showUpdate
+def add():
+    global assembly_language, registers
+    assembly_language = f"{instruction} ${rd}, ${rs}, ${rt}"
+    registers[reg(rd)] = registers[reg(rs)] + registers[reg(rt)]
+
+
+@showUpdate
+def sub():
+    global assembly_language, registers
+    assembly_language = f"{instruction} ${rd}, ${rs}, ${rt}"
+    registers[reg(rd)] = registers[reg(rs)] - registers[reg(rt)]
+
+
+@showUpdate
+def slt():
+    global assembly_language, registers
+    assembly_language = f"{instruction} ${rd}, ${rs}, ${rt}"
+    registers[reg(rd)] = 1 if registers[reg(rs)] < registers[reg(rt)] else 0
+
+
+@showUpdate
+def addi():
+    global assembly_language, registers
+    assembly_language = f"{instruction}, ${rt}, ${rs}, {imm}"
+    registers[reg(rt)] = registers[reg(rs)] - imm
+
+
+@showUpdate
+def andi():
+    global assembly_language, registers
+    assembly_language = f"{instruction}, ${rt}, ${rs}, {imm}"
+    registers[reg(rt)] = registers[reg(rs)] & imm
+
+
+@showUpdate
+def lw():
+    global assembly_language, registers
+    assembly_language = f"{instruction} {rt}, 0$({rs})" if imm == "0x0" else f"{instruction} {rt}, {imm}(${rs})"
+    registers[reg(rt)] = dataMemory[registers[reg(rs)]+imm]
+
+
+@showUpdate
+def sw():
+    global assembly_language, registers
+    assembly_language = f"{instruction} {rt}, 0$({rs})" if imm == "0x0" else f"{instruction} {rt}, {imm}(${rs})"
+    dataMemory[registers[reg(rs)]+imm] = registers[reg(rt)]
+
+
+@showUpdate
+def div():
+    global assembly_language, registers
+    assembly_language = f"{instruction}, ${rs}, %{rt}"
+    registers["lo"] = registers[reg(rs)] / registers[reg(rt)]
+    registers["hi"] = registers[reg(rs)] % registers[reg(rt)]
+
+
+@showUpdate
+def mfhi():
+    global assembly_language, registers
+    assembly_language = f"{instruction} ${rd}"
+    registers[reg(rd)] = registers["hi"]
+
+
+@showUpdate
+def beq():
+    global assembly_language, registers
+    assembly_language = f"{instruction}, ${rs}, ${rt}, {imm}"
+    if registers[reg(rs)] == registers[reg(rt)]:
+        incrementPc()
+        incrementPc(imm)
+    else:
+        pass
+
+
+@showUpdate
+def bne():
+    global assembly_language, registers
+    assembly_language = f"{instruction}, ${rs}, ${rt}, {imm}"
+    if registers[reg(rs)] == registers[reg(rt)]:
+        pass
+    else:
+        incrementPc()
+        incrementPc(imm)
+
+
+@showUpdate
+def j():
+    global assembly_language, registers
+    setPc(imm)
+
+
+@showUpdate
+def jr():
+    global assembly_language, registers
+    assembly_language = f"{instruction}, ${rs}"
+    setPc(registers[reg(rs)])
+
+
+@showUpdate
+def jal():
+    global assembly_language, registers
+    registers[reg(31)] = int(pc / 4)
+    setPc(registers[reg(rs)])
+
+
+@showUpdate
+def sra():
+    global assembly_language, registers
+    assembly_language = f"{instruction}, ${rd}, ${rt}, {shamt}"
+    registers[reg(rd)] = registers[reg(rt)] >> imm
+
+
+@showUpdate
+def xori():
+    global assembly_language, registers
+    assembly_language = f"{instruction}, ${rt}, ${rs}, {imm}"
+    registers[reg(rt)] = registers[reg(rs)] ^ imm
+
+
+@showUpdate
+def slti():
+    global assembly_language, registers
+    assembly_language = f"{instruction}, ${rt}, ${rs}, {imm}"
+    registers[reg(rt)] = 1 if registers[reg(rs)] < imm else 0
+
+
+@showUpdate
+def xor():
+    global assembly_language, registers
+    assembly_language = f"{instruction} ${rd}, ${rs}, ${rt}"
+    registers[reg(rd)] = registers[reg(rs)] ^ registers[reg(rt)]
+
+
+@showUpdate
+def sllv():
+    global assembly_language, registers
+    assembly_language = f"{instruction} ${rd}, ${rs}, ${rt}"
+    registers[reg(rd)] = registers[reg(rt)] << rs
+
+
+@showUpdate
+def sll():
+    global assembly_language, registers
+    assembly_language = f"{instruction} ${rd}, ${rs}, ${shamt}"
+    registers[reg(rd)] = registers[reg(rt)] << shamt
 
 
 
